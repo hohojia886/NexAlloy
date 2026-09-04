@@ -30,7 +30,7 @@ import kotlin.random.Random
 data class ReleaseInfo(
     @SerializedName("tag_name") val tagName: String,
     @SerializedName("body_html") val releaseNoteHtml: String,
-    @SerializedName("html_url") val releaseUrl: String
+    @SerializedName("html_url") val releaseUrl: String,
 )
 
 data class VersionInfo(val versionCode: Int, val versionName: String) {
@@ -58,7 +58,7 @@ const val OWNER = "NexAlloy"
 const val REPO = "NexAlloy"
 const val currentVersionCode = BuildConfig.VERSION_CODE
 
-class UpdateChecker() : CoroutineScope {
+class UpdateChecker : CoroutineScope {
     override val coroutineContext: CoroutineContext
         get() = Dispatchers.IO + CoroutineExceptionHandler { _, err ->
             Logger.printException({ "coroutineContext error" }, err)
@@ -115,7 +115,7 @@ class UpdateChecker() : CoroutineScope {
                 Logger.printDebug { content }
                 latestRelease = Gson().fromJson(content, ReleaseInfo::class.java)
                 latestVersionInfo = VersionInfo.fromTagName(latestRelease.tagName)
-                Logger.printDebug { "$latestVersionInfo" }
+                Logger.printDebug { latestVersionInfo.toString() }
                 if (latestVersionInfo.versionCode > currentVersionCode) {
                     Logger.printInfo { "Found new version of NexAlloy ${latestRelease.tagName}" }
                     showUpdateDialog()

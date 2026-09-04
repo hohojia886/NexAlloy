@@ -57,7 +57,7 @@ fun MethodMatcher.opcodes(opcodes: Collection<Opcode>): OpCodesMatcher {
 }
 
 fun MethodMatcher.accessFlags(vararg accessFlags: AccessFlags) {
-    val modifiers = accessFlags.map { it.modifier }.reduce { acc, next -> acc or next }
+    val modifiers = accessFlags.fold(0) { acc, flag -> acc or flag.modifier }
     if (modifiers != 0) this.modifiers(modifiers)
     if (accessFlags.contains(AccessFlags.CONSTRUCTOR)) {
         if (accessFlags.contains(AccessFlags.STATIC)) this.name = "<clinit>"
@@ -99,7 +99,7 @@ private fun findLongestOpcodeSequence(filters: List<InstructionFilter>): List<In
         }
     }
 
-    return chunks.filter { it.all { it is OpcodeFilter } }.maxByOrNull { it.size }
+    return chunks.filter { chunk -> chunk.all { it is OpcodeFilter } }.maxByOrNull { it.size }
         ?: emptyList()
 }
 
@@ -390,7 +390,7 @@ open class Fingerprint internal constructor(
         val instructionMatches = if (filtersLocal == null) {
             null
         } else {
-            val instructions = method.instructions.toList() ?: return null
+            val instructions = method.instructions.toList()
 
             fun matchFilters(): List<Match.InstructionMatch>? {
                 val lastMethodIndex = instructions.lastIndex
@@ -469,7 +469,7 @@ open class Fingerprint internal constructor(
         get() = match().instructionMatches
 }
 
-class Match constructor(
+class Match(
     val method: MethodData,
     private val _instructionMatches: List<InstructionMatch>?,
 ) {

@@ -6,7 +6,6 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.Application
 import android.content.Context.MODE_PRIVATE
-import android.os.Build
 import android.os.Bundle
 import android.webkit.WebView
 import app.morphe.extension.shared.Logger
@@ -16,7 +15,6 @@ import de.robv.android.xposed.XC_MethodHook
 import de.robv.android.xposed.XposedBridge
 import de.robv.android.xposed.XposedHelpers
 import io.github.libxposed.api.XposedInterface
-import io.github.libxposed.api.XposedInterface.Hooker
 import io.github.libxposed.api.XposedModuleInterface
 import io.github.nexalloy.BuildConfig.DEBUG
 import io.github.nexalloy.morphe.Fingerprint
@@ -45,7 +43,7 @@ fun patch(
     name: String = "",
     description: String = "",
     use: Boolean = true,
-    func: PatchExecutor.() -> Unit
+    func: PatchExecutor.() -> Unit,
 ) =
     Patch(name, description, use, func)
 
@@ -137,7 +135,7 @@ class SharedPrefCache(app: Application) : DexKitCacheBridge.Cache {
         map.forEach { (k, v) ->
             edit.putString(k, v)
         }
-        edit.commit()
+        edit.apply()
     }
 }
 
@@ -213,7 +211,7 @@ class PatchExecutor(
             /**
              * @see io.github.nexalloy.activity.AppPatchSettingsActivity.AppPatchSettingsFragment.onCreate
              * */
-            val isEnabled = patchPreferences?.getBoolean(hook.name, hook.use) ?: hook.use
+            val isEnabled = patchPreferences.getBoolean(hook.name, hook.use)
             if (!isEnabled) return@forEach // Pref Key
             runCatching { hook.run(this) }.onFailure { err ->
                 XposedBridge.log(err)
@@ -246,11 +244,7 @@ class PatchExecutor(
     private fun getAppVersion(): String {
         val packageInfo = appContext.packageManager.getPackageInfo(appContext.packageName, 0)
         val versionName = packageInfo.versionName
-        val versionCode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            packageInfo.longVersionCode
-        } else {
-            @Suppress("DEPRECATION") packageInfo.versionCode
-        }
+        val versionCode = packageInfo.longVersionCode
         return "$versionName ($versionCode)"
     }
 
@@ -326,8 +320,6 @@ class PatchExecutor(
 
     val Fingerprint.member get() = dexMethod.toMember()
 
-    val Fingerprint.memberOrNull get() = runCatching { this.member }.getOrNull()
-
     val Fingerprint.method get() = dexMethod.toMethod()
 
     val Fingerprint.declaredClass get() = classLoader.loadClass(dexMethod.declaredClassName)
@@ -356,8 +348,8 @@ class PatchExecutor(
     ): DexKitBridge.() -> List<T> {
         return {
             try {
-                funcFunc().also {
-                    Logger.printInfo { "$key Matches: ${it.joinToString { serializer(it) }}" }
+                funcFunc().also { list ->
+                    Logger.printInfo { "$key Matches: ${list.joinToString { serializer(it) }}" }
                 }
             } catch (e: Exception) {
                 Logger.printInfo({ "Fingerprint $key Not Found" }, e)
@@ -381,7 +373,9 @@ class PatchExecutor(
     private inline fun getDexMethods(
         key: String, crossinline findFunc: DexKitBridge.() -> List<MethodData>
     ): List<DexMethod> = dexkit.getMethodsDirectOrEmpty(
-        key, wrapFindList(key, findFunc) { it.descriptor })
+        key,
+        wrapFindList(key, findFunc) { it.descriptor }
+    )
 }
 
 val ExtensionResourceHook = patch {

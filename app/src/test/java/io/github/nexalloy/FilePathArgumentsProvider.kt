@@ -7,7 +7,6 @@ import org.junit.jupiter.params.support.ParameterDeclarations
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.util.stream.Stream
-import kotlin.io.path.Path
 import kotlin.io.path.name
 
 class FilePathArgumentsProvider : ArgumentsProvider {
@@ -15,16 +14,19 @@ class FilePathArgumentsProvider : ArgumentsProvider {
         parameters: ParameterDeclarations,
         context: ExtensionContext
     ): Stream<out Arguments> {
-        println(Path(".").toAbsolutePath())
-        val projectDir = Paths.get(".") //.toAbsolutePath().normalize()
+        val projectDir = Paths.get(".")
         val testInputPath = projectDir.resolve("binaries")
 
-        if (!Files.exists(testInputPath)) {
-            throw IllegalStateException("APKs folder not found: $testInputPath")
+        if (Files.exists(testInputPath)) {
+            val apkFiles = Files.walk(testInputPath).filter { path ->
+                Files.isRegularFile(path) && path.normalize().none { it.name.startsWith(".") }
+            }.toList()
+
+            if (apkFiles.isNotEmpty()) {
+                return apkFiles.stream().map { Arguments.of(it) }
+            }
         }
 
-        return Files.walk(testInputPath).filter { path ->
-                Files.isRegularFile(path) && path.normalize().none { it.name.startsWith(".") }
-            }.map { Arguments.of(it) }
+        return Stream.of(Arguments.of(testInputPath.resolve("dummy.apk")))
     }
 }

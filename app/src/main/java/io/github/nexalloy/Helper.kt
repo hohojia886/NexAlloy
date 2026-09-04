@@ -71,24 +71,29 @@ fun Member.hookMethod(cb: XC_MethodHook) {
 }
 
 inline fun Member.hookMethod(
-    crossinline block: HookDsl<IHookCallback>.() -> Unit
+    crossinline block: HookDsl<IHookCallback>.() -> Unit,
 ) {
     val builder = HookDsl<IHookCallback> {}.apply(block)
     hookMethodInternal(builder.before, builder.after, builder.priority)
 }
 
 inline fun Member.hookMethodInternal(
-    crossinline before: IHookCallback, crossinline after: IHookCallback, priority: Int
+    crossinline before: IHookCallback,
+    crossinline after: IHookCallback,
+    priority: Int,
 ) {
-    XposedBridge.hookMethod(this, object : XC_MethodHook(priority) {
-        override fun beforeHookedMethod(param: MethodHookParam) {
-            before(param)
-        }
+    XposedBridge.hookMethod(
+        this,
+        object : XC_MethodHook(priority) {
+            override fun beforeHookedMethod(param: MethodHookParam) {
+                before(param)
+            }
 
-        override fun afterHookedMethod(param: MethodHookParam) {
-            after(param)
+            override fun afterHookedMethod(param: MethodHookParam) {
+                after(param)
+            }
         }
-    })
+    )
 }
 
 data class ScopedHookParam(

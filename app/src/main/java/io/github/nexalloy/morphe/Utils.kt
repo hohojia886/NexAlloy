@@ -333,19 +333,19 @@ private fun MethodData.findInstructionIndexFromToString(fieldName: String, isFie
  * @param fieldName The name of the field to find. Partial matches are allowed.
  */
 fun MethodData.findFieldFromToString(fieldName: String) : FieldData {
-    val methodUsageIndex = findInstructionIndexFromToString(fieldName, true)
+    val methodUsageIndex = findInstructionIndexFromToString(fieldName, isField = true)
     return instructions[methodUsageIndex].fieldRef!!
 }
 
 /**
- * Get the index of the first [Instruction] that matches the predicate, starting from [startIndex].
+ * Get the index of the first [InstructionData] that matches the predicate, starting from [startIndex].
  *
  * @param startIndex Optional starting index to start searching from.
  * @return -1 if the instruction is not found.
  * @see indexOfFirstInstructionOrThrow
  */
 fun MethodData.indexOfFirstInstruction(startIndex: Int = 0, filter: InstructionData.() -> Boolean): Int {
-    var instructions = this.instructions ?: return -1
+    var instructions = this.instructions
     if (startIndex != 0) {
         instructions = instructions.drop(startIndex)
     }
@@ -409,10 +409,6 @@ fun MethodData.indexOfFirstInstructionReversed(startIndex: Int? = null, targetOp
  * @see indexOfFirstInstructionReversedOrThrow
  */
 fun MethodData.indexOfFirstInstructionReversed(startIndex: Int? = null, filter: InstructionData.() -> Boolean): Int {
-    var instructions = this.instructions
-    if (startIndex != null) {
-        instructions = instructions.take(startIndex + 1)
-    }
-
+    val instructions = if (startIndex != null) this.instructions.take(startIndex + 1) else this.instructions
     return instructions.indexOfLast(filter)
 }

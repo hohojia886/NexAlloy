@@ -32,7 +32,7 @@ fun interface InstructionLocation {
      *
      * This can only be used for the first filter, and using with any other filter will throw an exception.
      */
-    class MatchFirst() : InstructionLocation {
+    class MatchFirst : InstructionLocation {
         override fun indexIsValidForMatching(
             previouslyMatchedIndex: Int,
             currentIndex: Int
@@ -54,7 +54,7 @@ fun interface InstructionLocation {
      *
      * This cannot be used for the first filter and will throw an exception.
      */
-    class MatchAfterImmediately() : InstructionLocation {
+    class MatchAfterImmediately : InstructionLocation {
         override fun indexIsValidForMatching(
             previouslyMatchedIndex: Int,
             currentIndex: Int
@@ -486,7 +486,7 @@ class MethodCallFilter internal constructor(
 
     internal companion object {
         private val regex =
-            Regex("""^(L[^;]+;)->([^(\s]+)\(([^)]*)\)(\[?L[^;]+;|\[?[BCSIJFDZV])${'$'}""")
+            Regex("""^(L[^;]+;)->([^(\s]+)\(([^)]*)\)(\[?L[^;]+;|\[?[BCSIJFDZV])$""")
 
         internal fun parseJvmMethodCall(
             methodSignature: String,
@@ -743,7 +743,7 @@ class FieldAccessFilter internal constructor(
     }
 
     internal companion object {
-        private val regex = Regex("""^(L[^;]+;)->([^:]+):(\[?L[^;]+;|\[?[BCSIJFDZV])${'$'}""")
+        private val regex = Regex("""^(L[^;]+;)->([^:]+):(\[?L[^;]+;|\[?[BCSIJFDZV])$""")
 
         internal fun parseJvmFieldAccess(
             fieldSignature: String,

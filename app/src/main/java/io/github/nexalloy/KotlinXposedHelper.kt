@@ -210,14 +210,14 @@ fun Class<*>.findFirstFieldByExactTypeOrNull(type: Class<*>?): Field? = runCatch
 }
 
 fun Any.getFirstFieldByExactType(type: Class<*>): Any? =
-    javaClass.findFirstFieldByExactType(type).get(this)
+    javaClass.findFirstFieldByExactType(type)[this]
 
 @Suppress("UNCHECKED_CAST")
 fun <T> Any.getFirstFieldByExactTypeAs(type: Class<*>) =
-    javaClass.findFirstFieldByExactType(type).get(this) as? T
+    javaClass.findFirstFieldByExactType(type)[this] as? T
 
 inline fun <reified T : Any> Any.getFirstFieldByExactType() =
-    javaClass.findFirstFieldByExactType(T::class.java).get(this) as? T
+    javaClass.findFirstFieldByExactType(T::class.java)[this] as? T
 
 fun Any.getFirstFieldByExactTypeOrNull(type: Class<*>?): Any? = runCatchingOrNull {
     javaClass.findFirstFieldByExactTypeOrNull(type)?.get(this)
