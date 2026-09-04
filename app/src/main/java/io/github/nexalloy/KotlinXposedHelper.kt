@@ -24,6 +24,7 @@ import de.robv.android.xposed.XposedHelpers.setIntField
 import de.robv.android.xposed.XposedHelpers.setLongField
 import de.robv.android.xposed.XposedHelpers.setObjectField
 import de.robv.android.xposed.XposedHelpers.setStaticObjectField
+import io.github.nexalloy.cache.ReflectionCache
 import java.lang.reflect.Field
 import java.lang.reflect.Member
 import java.lang.reflect.Modifier
@@ -203,11 +204,10 @@ fun <T> T.setFloatField(field: String?, value: Float) = apply {
 }
 
 fun Class<*>.findFirstFieldByExactType(type: Class<*>): Field =
-    findFirstFieldByExactType(this, type)
+    ReflectionCache.findFirstFieldByExactType(this, type)
 
-fun Class<*>.findFirstFieldByExactTypeOrNull(type: Class<*>?): Field? = runCatchingOrNull {
-    findFirstFieldByExactType(this, type)
-}
+fun Class<*>.findFirstFieldByExactTypeOrNull(type: Class<*>?): Field? =
+    ReflectionCache.findFirstFieldByExactTypeOrNull(this, type)
 
 fun Any.getFirstFieldByExactType(type: Class<*>): Any? =
     javaClass.findFirstFieldByExactType(type)[this]

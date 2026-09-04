@@ -17,6 +17,7 @@ import de.robv.android.xposed.XposedHelpers
 import io.github.libxposed.api.XposedInterface
 import io.github.libxposed.api.XposedModuleInterface
 import io.github.nexalloy.BuildConfig.DEBUG
+import io.github.nexalloy.compat.LSPosedCompat
 import io.github.nexalloy.morphe.Fingerprint
 import org.luckypray.dexkit.DexKitBridge
 import org.luckypray.dexkit.DexKitCacheBridge
@@ -149,6 +150,10 @@ class PatchExecutor(
     val lpparam: XposedModuleInterface.PackageReadyParam,
     xposed: XposedInterface
 ) : IHook(xposed) {
+    init {
+        LSPosedCompat.init(xposed)
+    }
+
     override val classLoader = lpparam.classLoader
 
     /**

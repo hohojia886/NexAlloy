@@ -177,11 +177,17 @@ class UpdateChecker : CoroutineScope {
 
     private fun openReleasePage() {
         try {
-            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(latestRelease.releaseUrl))
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            val url = latestRelease.releaseUrl
+            if (!url.startsWith("https://") && !url.startsWith("http://")) {
+                Logger.printInfo { "Invalid release URL scheme: $url" }
+                return
+            }
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            }
             requireActivity().startActivity(intent)
         } catch (e: Exception) {
-            e.printStackTrace()
+            Logger.printException({ "openReleasePage error" }, e)
             Utils.showToastLong(e.message.toString())
         }
     }

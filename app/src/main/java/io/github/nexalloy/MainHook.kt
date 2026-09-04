@@ -1,16 +1,17 @@
 package io.github.nexalloy
 
 import android.app.Application
+import app.morphe.extension.shared.Logger
 import app.morphe.extension.shared.ResourceType
 import app.morphe.extension.shared.ResourceUtils
 import app.morphe.extension.shared.Utils
-import de.robv.android.xposed.XposedBridge
 import de.robv.android.xposed.XposedHelpers
 import io.github.libxposed.api.XposedInterface
 import io.github.libxposed.api.XposedModule
 import io.github.libxposed.api.XposedModuleInterface
 import io.github.libxposed.api.XposedModuleInterface.PackageReadyParam
 import io.github.nexalloy.common.UpdateChecker
+import io.github.nexalloy.compat.LSPosedCompat
 import io.github.nexalloy.morphe.ResourceFinder
 import io.github.nexalloy.morphe.resourceMappings
 
@@ -27,6 +28,7 @@ class MainHook : XposedModule() {
 
     override fun onModuleLoaded(param: XposedModuleInterface.ModuleLoadedParam) {
         modulePath = moduleApplicationInfo.sourceDir
+        LSPosedCompat.init(this)
     }
 
     override fun onPackageReady(param: PackageReadyParam) {
@@ -73,13 +75,19 @@ fun inContext(lpparam: PackageReadyParam, f: (Application) -> Unit) {
     val appClazz = XposedHelpers.findClass(lpparam.applicationInfo.className, lpparam.classLoader)
     appClazz.getMethod("onCreate").hookMethod {
         before {
-            val app = it.thisObject as Application
+            val app = it.thisObject as? Application ?: return@before
             Utils.setContext(app)
-            f(app)
+            try {
+                f(app)
+            } catch (t: Throwable) {
+                Logger.printException({ "Error executing inContext" }, t)
+            }
             if (modulePath.startsWith("/data/app/")) {
-                val prefs = xposed.getRemotePreferences("prefs")
-                if (!prefs.getBoolean("disable_auto_check_update", false)) {
-                    UpdateChecker().hookNewActivity()
+                runCatching {
+                    val prefs = xposed.getRemotePreferences("prefs")
+                    if (!prefs.getBoolean("disable_auto_check_update", false)) {
+                        UpdateChecker().hookNewActivity()
+                    }
                 }
             }
         }

@@ -12,6 +12,7 @@ import de.robv.android.xposed.XC_MethodHook
 import de.robv.android.xposed.XposedBridge
 import de.robv.android.xposed.XposedHelpers
 import io.github.libxposed.api.XposedInterface.PRIORITY_DEFAULT
+import io.github.nexalloy.compat.LSPosedCompat
 import java.io.File
 import java.lang.ref.WeakReference
 import java.lang.reflect.InvocationTargetException
@@ -82,17 +83,11 @@ inline fun Member.hookMethodInternal(
     crossinline after: IHookCallback,
     priority: Int,
 ) {
-    XposedBridge.hookMethod(
-        this,
-        object : XC_MethodHook(priority) {
-            override fun beforeHookedMethod(param: MethodHookParam) {
-                before(param)
-            }
-
-            override fun afterHookedMethod(param: MethodHookParam) {
-                after(param)
-            }
-        }
+    LSPosedCompat.hookMember(
+        member = this,
+        before = { before(it) },
+        after = { after(it) },
+        priority = priority,
     )
 }
 
