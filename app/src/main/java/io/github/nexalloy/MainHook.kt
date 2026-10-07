@@ -1,6 +1,7 @@
 package io.github.nexalloy
 
 import android.app.Application
+import app.morphe.extension.shared.Logger
 import app.morphe.extension.shared.ResourceType
 import app.morphe.extension.shared.ResourceUtils
 import app.morphe.extension.shared.Utils
@@ -73,13 +74,19 @@ fun inContext(lpparam: PackageReadyParam, f: (Application) -> Unit) {
     val appClazz = XposedHelpers.findClass(lpparam.applicationInfo.className, lpparam.classLoader)
     appClazz.getMethod("onCreate").hookMethod {
         before {
-            val app = it.thisObject as Application
+            val app = it.thisObject as? Application ?: return@before
             Utils.setContext(app)
-            f(app)
+            try {
+                f(app)
+            } catch (t: Throwable) {
+                Logger.printException({ "Error executing inContext" }, t)
+            }
             if (modulePath.startsWith("/data/app/")) {
-                val prefs = xposed.getRemotePreferences("prefs")
-                if (!prefs.getBoolean("disable_auto_check_update", false)) {
-                    UpdateChecker().hookNewActivity()
+                runCatching {
+                    val prefs = xposed.getRemotePreferences("prefs")
+                    if (!prefs.getBoolean("disable_auto_check_update", false)) {
+                        UpdateChecker().hookNewActivity()
+                    }
                 }
             }
         }

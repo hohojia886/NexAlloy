@@ -65,7 +65,7 @@ class AppPatchSettingsActivity : Activity() {
 
         override fun onStart() {
             super.onStart()
-            SettingApplication.addServiceStateListener(this, true)
+            SettingApplication.addServiceStateListener(this, notifyImmediately = true)
         }
 
         override fun onStop() {
@@ -85,7 +85,7 @@ class AppPatchSettingsActivity : Activity() {
                 val appName = arguments?.getString(ARGUMENT_APP_NAME)
                 val appPatchInfo = appPatchConfigurations.find { it.appName == appName }
                 if (appPatchInfo == null) throw Exception("AppPatchInfo not found, app_name: $appName")
-                val defaultPatchStates = appPatchInfo.patches.associate { it.name to it.use }
+                val defaultPatchStates = appPatchInfo.patches.associateBy({ it.name }) { it.use }
 
                 val screen = preferenceManager.createPreferenceScreen(context)
 

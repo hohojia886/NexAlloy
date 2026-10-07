@@ -56,7 +56,7 @@ class SettingsActivity : Activity(), SettingApplication.ServiceStateListener {
 
     override fun onStart() {
         super.onStart()
-        SettingApplication.addServiceStateListener(this, true)
+        SettingApplication.addServiceStateListener(this, notifyImmediately = true)
     }
 
     override fun onStop() {

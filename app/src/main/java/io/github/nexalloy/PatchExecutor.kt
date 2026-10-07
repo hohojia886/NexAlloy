@@ -16,7 +16,6 @@ import de.robv.android.xposed.XC_MethodHook
 import de.robv.android.xposed.XposedBridge
 import de.robv.android.xposed.XposedHelpers
 import io.github.libxposed.api.XposedInterface
-import io.github.libxposed.api.XposedInterface.Hooker
 import io.github.libxposed.api.XposedModuleInterface
 import io.github.nexalloy.BuildConfig.DEBUG
 import io.github.nexalloy.morphe.Fingerprint
@@ -45,7 +44,7 @@ fun patch(
     name: String = "",
     description: String = "",
     use: Boolean = true,
-    func: PatchExecutor.() -> Unit
+    func: PatchExecutor.() -> Unit,
 ) =
     Patch(name, description, use, func)
 
@@ -53,7 +52,7 @@ class Patch(
     val name: String,
     val description: String,
     val use: Boolean,
-    val run: PatchExecutor.() -> Unit
+    val run: PatchExecutor.() -> Unit,
 )
 
 abstract class IHook(val xposed: XposedInterface) : XposedInterface by xposed {
@@ -120,11 +119,11 @@ class SharedPrefCache(app: Application) : DexKitCacheBridge.Cache {
         map.getOrDefault(key, null)?.takeIf(String::isNotBlank)?.split('|') ?: default
 
     override fun putString(key: String, value: String) {
-        map.put(key, value)
+        map[key] = value
     }
 
     override fun putStringList(key: String, value: List<String>) {
-        map.put(key, value.joinToString("|"))
+        map[key] = value.joinToString("|")
     }
 
     override fun remove(key: String) {
@@ -137,7 +136,7 @@ class SharedPrefCache(app: Application) : DexKitCacheBridge.Cache {
         map.forEach { (k, v) ->
             edit.putString(k, v)
         }
-        edit.commit()
+        edit.apply()
     }
 }
 
@@ -175,12 +174,10 @@ class PatchExecutor(
         this.patches = patches
         val t = measureTimeMillis {
             loadCacheIfValid()
-            try {
+            dexkit.use {
                 executePatches()
                 finalizePatching()
                 logDebugInfo()
-            } finally {
-                dexkit.close()
             }
         }
         Logger.printDebug { "${lpparam.packageName} handleLoadPackage: ${t}ms" }
@@ -213,7 +210,7 @@ class PatchExecutor(
             /**
              * @see io.github.nexalloy.activity.AppPatchSettingsActivity.AppPatchSettingsFragment.onCreate
              * */
-            val isEnabled = patchPreferences?.getBoolean(hook.name, hook.use) ?: hook.use
+            val isEnabled = patchPreferences.getBoolean(hook.name, hook.use)
             if (!isEnabled) return@forEach // Pref Key
             runCatching { hook.run(this) }.onFailure { err ->
                 XposedBridge.log(err)
@@ -246,11 +243,8 @@ class PatchExecutor(
     private fun getAppVersion(): String {
         val packageInfo = appContext.packageManager.getPackageInfo(appContext.packageName, 0)
         val versionName = packageInfo.versionName
-        val versionCode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            packageInfo.longVersionCode
-        } else {
-            @Suppress("DEPRECATION") packageInfo.versionCode
-        }
+        @Suppress("DEPRECATION")
+        val versionCode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) packageInfo.longVersionCode else packageInfo.versionCode.toLong()
         return "$versionName ($versionCode)"
     }
 
@@ -297,7 +291,7 @@ class PatchExecutor(
     val KProperty0<FindFieldFunc>.field
         get() = dexField.toField()
 
-    val KProperty0<FindFieldFunc>.declaredClass
+    val KProperty0<FindFieldFunc>.declaredClass: Class<*>
         get() = classLoader.loadClass(dexField.declaredClassName)
 
     val KProperty0<FindFieldFunc>.type
@@ -325,8 +319,6 @@ class PatchExecutor(
     val Fingerprint.dexMethod get() = getDexMethod(cacheKey) { this@dexMethod.run() }
 
     val Fingerprint.member get() = dexMethod.toMember()
-
-    val Fingerprint.memberOrNull get() = runCatching { this.member }.getOrNull()
 
     val Fingerprint.method get() = dexMethod.toMethod()
 
@@ -356,8 +348,8 @@ class PatchExecutor(
     ): DexKitBridge.() -> List<T> {
         return {
             try {
-                funcFunc().also {
-                    Logger.printInfo { "$key Matches: ${it.joinToString { serializer(it) }}" }
+                funcFunc().also { list ->
+                    Logger.printInfo { "$key Matches: ${list.joinToString { serializer(it) }}" }
                 }
             } catch (e: Exception) {
                 Logger.printInfo({ "Fingerprint $key Not Found" }, e)
@@ -381,7 +373,9 @@ class PatchExecutor(
     private inline fun getDexMethods(
         key: String, crossinline findFunc: DexKitBridge.() -> List<MethodData>
     ): List<DexMethod> = dexkit.getMethodsDirectOrEmpty(
-        key, wrapFindList(key, findFunc) { it.descriptor })
+        key,
+        wrapFindList(key, findFunc) { it.descriptor }
+    )
 }
 
 val ExtensionResourceHook = patch {

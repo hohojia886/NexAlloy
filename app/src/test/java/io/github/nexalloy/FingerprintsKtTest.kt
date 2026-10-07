@@ -19,9 +19,9 @@ import kotlin.system.measureTimeMillis
 @ParameterizedClass
 @ArgumentsSource(FilePathArgumentsProvider::class)
 class FingerprintsKtTest(val apkPath: Path) {
-    val context = ApkContext(apkPath.toString())
-    val dexkit: DexKitBridge = context.dexkit
-    val appVersion: AppVersion = context.appVersion
+    val context by lazy { ApkContext(apkPath.toString()) }
+    val dexkit: DexKitBridge get() = context.dexkit
+    val appVersion: AppVersion get() = context.appVersion
 
     // region Test runner
 
@@ -211,6 +211,10 @@ class FingerprintsKtTest(val apkPath: Path) {
 
     @TestFactory
     fun fingerprintTest(): Iterator<DynamicTest> = sequence {
+        if (!Files.exists(apkPath) || !Files.isRegularFile(apkPath)) {
+            return@sequence
+        }
+
         val app = when {
             apkPath.name.startsWith("com.google.android.youtube") -> "youtube"
             apkPath.name.startsWith("com.google.android.apps.youtube.music") -> "music"

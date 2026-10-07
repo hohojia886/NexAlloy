@@ -203,21 +203,20 @@ fun <T> T.setFloatField(field: String?, value: Float) = apply {
 }
 
 fun Class<*>.findFirstFieldByExactType(type: Class<*>): Field =
-    findFirstFieldByExactType(this, type)
+    io.github.nexalloy.cache.ReflectionCache.findFirstFieldByExactType(this, type)
 
-fun Class<*>.findFirstFieldByExactTypeOrNull(type: Class<*>?): Field? = runCatchingOrNull {
-    findFirstFieldByExactType(this, type)
-}
+fun Class<*>.findFirstFieldByExactTypeOrNull(type: Class<*>?): Field? =
+    io.github.nexalloy.cache.ReflectionCache.findFirstFieldByExactTypeOrNull(this, type)
 
 fun Any.getFirstFieldByExactType(type: Class<*>): Any? =
-    javaClass.findFirstFieldByExactType(type).get(this)
+    javaClass.findFirstFieldByExactType(type)[this]
 
 @Suppress("UNCHECKED_CAST")
 fun <T> Any.getFirstFieldByExactTypeAs(type: Class<*>) =
-    javaClass.findFirstFieldByExactType(type).get(this) as? T
+    javaClass.findFirstFieldByExactType(type)[this] as? T
 
 inline fun <reified T : Any> Any.getFirstFieldByExactType() =
-    javaClass.findFirstFieldByExactType(T::class.java).get(this) as? T
+    javaClass.findFirstFieldByExactType(T::class.java)[this] as? T
 
 fun Any.getFirstFieldByExactTypeOrNull(type: Class<*>?): Any? = runCatchingOrNull {
     javaClass.findFirstFieldByExactTypeOrNull(type)?.get(this)
